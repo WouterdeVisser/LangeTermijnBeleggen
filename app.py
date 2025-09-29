@@ -1,0 +1,133 @@
+import streamlit as st
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Streamlit layout
+st.set_page_config(layout="wide")
+
+# Simulatiefunctie
+def simulate(start_capital, monthly_start, monthly_end, years_build, spend_schedule,
+             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=2000):
+
+    # Inleg (koopkracht → nominaal)
+    months_total = years_build * 12
+    contribs_real = np.linspace(monthly_start, monthly_end, months_total)
+    contribs_nominal = [contribs_real[m] * ((1+inflation)**(m//12)) for m in range(months_total)]
+    yearly_contribs = [sum(contribs_nominal[i*12:(i+1)*12]) for i in range(years_build)]
+
+    # Uitgaven (drie fasen) → inflatie vanaf einde opbouw
+    yearly_spends = []
+    for block in spend_schedule:
+        block_vals = np.linspace(block["start"], block["end"], block["years"]*12)
+        block_nom = [block_vals[m] * ((1+inflation)**(years_build + m//12)) for m in range(len(block_vals))]
+        yearly_spends.extend([sum(block_nom[i*12:(i+1)*12]) for i in range(block["years"])])
+    withdrawals = [0]*years_build + yearly_spends
+    total_years = years_build + len(yearly_spends)
+
+    # Simulaties
+    results = np.zeros((n_scenarios, total_years))
+    rng = np.random.default_rng()
+    for s in range(n_scenarios):
+        capital = start_capital
+        for year in range(total_years):
+            r = rng.normal(annual_return_mean, annual_return_std)
+            contrib = yearly_contribs[year] if year < years_build else 0
+            withdraw = withdrawals[year] if year < len(withdrawals) else 0
+            capital = capital * (1+r) + contrib - withdraw
+            if capital < 0:
+                capital = 0
+            results[s, year] = capital
+
+    return results, withdrawals
+
+
+# -------- Streamlit interface --------
+st.title("Interactieve Simulatie Lange Termijn Beleggen")
+
+# Leeftijd
+start_age = st.slider("Leeftijd bij start", 18, 50, 25)
+pension_age = 70
+pension_year = pension_age - start_age
+
+# Basisparameters
+start_capital = st.slider("Startkapitaal (€)", 0, 100000, 20000, 1000)
+monthly_start = st.slider("Begininleg per maand (€)", 0, 2000, 300, 50)
+monthly_end = st.slider("Eindinleg per maand (€)", 0, 3000, 800, 50)
+years_build = st.slider("Jaren opbouw", 1, 40, 30)
+annual_return_mean = st.slider("Gemiddeld rendement (%)", 0, 15, 7, 1) / 100
+annual_return_std = st.slider("Volatiliteit rendement (%)", 0, 30, 15, 1) / 100
+
+# Opname fasen
+st.subheader("Opnamefase (3 blokken)")
+spend_schedule = []
+for i in range(3):
+    col1, col2, col3 = st.columns(3)
+    with col1: years = st.slider(f"Fase {i+1} - jaren", 0, 40, 10, 1, key=f"y{i}")
+    with col2: start = st.slider(f"Fase {i+1} - begin (€)", 0, 6000, 3000, 100, key=f"s{i}")
+    with col3: end = st.slider(f"Fase {i+1} - eind (€)", 0, 6000, 3000, 100, key=f"e{i}")
+    if years > 0:
+        spend_schedule.append({"years": years, "start": start, "end": end})
+
+# Run simulatie
+results, withdrawals = simulate(start_capital, monthly_start, monthly_end, years_build,
+                   spend_schedule, annual_return_mean, annual_return_std)
+
+# Percentielen
+percentiles = [10, 20, 40, 50, 60, 80, 90]
+curves = {p: np.percentile(results, p, axis=0) for p in percentiles}
+
+# Eindwaarden
+end_build = {p: curves[p][years_build-1] for p in percentiles}
+end_total = {p: curves[p][-1] for p in percentiles}
+zero_years = {}
+for p in percentiles:
+    series = curves[p]
+    idx = np.where(series <= 0)[0]
+    zero_years[p] = idx[0]+1 if len(idx) > 0 else None
+
+# Kleuren rood → groen
+colors = ['darkred', 'red', 'orange', 'gold', 'limegreen', 'green', 'darkgreen']
+
+# Plot
+fig, ax = plt.subplots(figsize=(28,20), dpi=200)
+
+for p, c in zip(percentiles, colors):
+    ax.plot(curves[p], label=f"{p}e perc.", color=c, linewidth=2)
+    
+    # Labels na opbouwfase en eind (zwart, groter)
+    ax.text(years_build, end_build[p], f"{int(end_build[p]):,}", color="black", 
+            fontsize=14, fontweight="bold", ha="left", va="bottom")
+    ax.text(years_build + len(withdrawals), end_total[p], f"{int(end_total[p]):,}", color="black", 
+            fontsize=14, fontweight="bold", ha="left", va="bottom")
+    
+    # Marker bij nul
+    if zero_years[p] is not None:
+        ax.scatter(zero_years[p], 0, color=c, marker="x", s=120,
+                   label=f"{p}e perc. op=0 in jaar {zero_years[p]}")
+
+# Verticale lijnen
+ax.axvline(years_build, color="black", linestyle=":", label="Einde opbouwfase")
+if 0 < pension_year <= results.shape[1]:
+    ax.axvline(pension_year, color="red", linestyle="--", label=f"Pensioen {pension_age} jr")
+    for p in percentiles:
+        val = curves[p][pension_year-1]
+        ax.text(pension_year, val, f"{int(val):,}", color="black", 
+                fontsize=14, fontweight="bold", ha="left", va="bottom")
+
+ax.set_xlabel("Jaar", fontsize=16)
+ax.set_ylabel("Vermogen (€)", fontsize=16)
+ax.set_ylim(-100000, 3_000_000)
+
+# Dynamische titel
+ax.set_title(
+    f"Monte Carlo Vermogenssimulatie ({len(results)} scenario's)\n"
+    f"Leeftijd start: {start_age}, Pensioen: {pension_age}, "
+    f"Startkapitaal: €{start_capital:,}, "
+    f"Inleg: {monthly_start}→{monthly_end} €/mnd reëel ({years_build} jr), "
+    f"Rendement: {annual_return_mean*100:.1f}% ± {annual_return_std*100:.1f}%"
+, fontsize=18)
+
+ax.legend(ncol=2, fontsize=14)
+ax.grid(True)
+
+st.pyplot(fig, use_container_width=True)
