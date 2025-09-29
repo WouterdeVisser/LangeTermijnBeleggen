@@ -92,8 +92,8 @@ fig, ax = plt.subplots(figsize=(28,14), dpi=200)
 for p, c in zip(percentiles, colors):
     ax.plot(curves[p], label=f"{p}e perc.", color=c, linewidth=2)
 
-    # Label bij einde opbouw (jaar = years_build, waarde index = years_build-1)
-    val_build = curves[p][years_build-1]
+    # Label bij einde opbouw (jaar = years_build, waarde index = years_build)
+    val_build = curves[p][years_build]
     ax.text(years_build, min(val_build, 3_000_000),
             f"{int(val_build):,}", color="black", fontsize=14, fontweight="bold",
             ha="left", va="bottom")
@@ -156,6 +156,7 @@ De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
 - **Rendement**: per jaar getrokken uit een normale verdeling met het gekozen gemiddelde en volatiliteit.  
 - **Weergave**: alle bedragen zijn in **nominale euro’s** (wat je daadwerkelijk op je rekening zou zien).
 """)
+
 
 
 
