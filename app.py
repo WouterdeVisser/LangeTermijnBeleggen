@@ -50,7 +50,7 @@ pension_age = 70
 pension_year = pension_age - start_age
 
 # Basisparameters
-start_capital = st.slider("Startkapitaal (€)", 0, 100000, 20000, 1000)
+start_capital = st.slider("Startkapitaal (€)", 0, 100000, 10000, 1000)
 monthly_start = st.slider("Begininleg per maand (€)", 0, 2000, 300, 50)
 monthly_end = st.slider("Eindinleg per maand (€)", 0, 3000, 800, 50)
 years_build = st.slider("Jaren opbouw", 1, 40, 30)
@@ -76,9 +76,7 @@ results, withdrawals = simulate(start_capital, monthly_start, monthly_end, years
 percentiles = [10, 20, 40, 50, 60, 80, 90]
 curves = {p: np.percentile(results, p, axis=0) for p in percentiles}
 
-# Eindwaarden
-end_build = {p: curves[p][years_build-1] for p in percentiles}
-end_total = {p: curves[p][-1] for p in percentiles}
+# Wanneer gaat vermogen naar 0?
 zero_years = {}
 for p in percentiles:
     series = curves[p]
@@ -89,18 +87,18 @@ for p in percentiles:
 colors = ['darkred', 'red', 'orange', 'gold', 'limegreen', 'green', 'darkgreen']
 
 # Plot
-fig, ax = plt.subplots(figsize=(28,20), dpi=200)
+fig, ax = plt.subplots(figsize=(28,14), dpi=200)
 
 for p, c in zip(percentiles, colors):
     ax.plot(curves[p], label=f"{p}e perc.", color=c, linewidth=2)
-    
-    # Labels na opbouwfase en eind (zwart, groter)
-    ax.text(years_build, end_build[p], f"{int(end_build[p]):,}", color="black", 
-            fontsize=14, fontweight="bold", ha="left", va="bottom")
-    ax.text(years_build + len(withdrawals), end_total[p], f"{int(end_total[p]):,}", color="black", 
-            fontsize=14, fontweight="bold", ha="left", va="bottom")
-    
-    # Marker bij nul
+
+    # Label bij einde opbouw (jaar = years_build)
+    ax.text(years_build, curves[p][years_build], 
+            f"{int(curves[p][years_build]):,}", 
+            color="black", fontsize=14, fontweight="bold",
+            ha="left", va="bottom")
+
+    # Marker bij nulvermogen
     if zero_years[p] is not None:
         ax.scatter(zero_years[p], 0, color=c, marker="x", s=120,
                    label=f"{p}e perc. op=0 in jaar {zero_years[p]}")
@@ -110,13 +108,14 @@ ax.axvline(years_build, color="black", linestyle=":", label="Einde opbouwfase")
 if 0 < pension_year <= results.shape[1]:
     ax.axvline(pension_year, color="red", linestyle="--", label=f"Pensioen {pension_age} jr")
     for p in percentiles:
-        val = curves[p][pension_year-1]
-        ax.text(pension_year, val, f"{int(val):,}", color="black", 
-                fontsize=14, fontweight="bold", ha="left", va="bottom")
+        val = curves[p][pension_year]
+        ax.text(pension_year, val, f"{int(val):,}", 
+                color="black", fontsize=14, fontweight="bold",
+                ha="left", va="bottom")
 
 ax.set_xlabel("Jaar", fontsize=16)
 ax.set_ylabel("Vermogen (€)", fontsize=16)
-ax.set_ylim(-100000, 3_000_000)
+ax.set_ylim(0, 3_000_000)
 
 # Dynamische titel
 ax.set_title(
@@ -131,3 +130,4 @@ ax.legend(ncol=2, fontsize=14)
 ax.grid(True)
 
 st.pyplot(fig, use_container_width=True)
+
