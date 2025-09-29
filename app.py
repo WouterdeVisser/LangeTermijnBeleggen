@@ -7,7 +7,7 @@ st.set_page_config(layout="wide")
 
 # Simulatiefunctie
 def simulate(start_capital, monthly_start, monthly_end, years_build, spend_schedule,
-             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=2000):
+             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=10000):
 
     # Inleg (koopkracht → nominaal)
     months_total = years_build * 12
@@ -156,6 +156,7 @@ De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
 - **Rendement**: per jaar getrokken uit een normale verdeling met het gekozen gemiddelde en volatiliteit.  
 - **Weergave**: alle bedragen zijn in **nominale euro’s** (wat je daadwerkelijk op je rekening zou zien).
 """)
+
 
 
 
