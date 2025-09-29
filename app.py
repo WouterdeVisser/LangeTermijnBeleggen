@@ -21,7 +21,7 @@ def simulate(start_capital, monthly_start, monthly_end, years_build, spend_sched
         block_vals = np.linspace(block["start"], block["end"], block["years"]*12)
         block_nom = [block_vals[m] * ((1+inflation)**(years_build + m//12)) for m in range(len(block_vals))]
         yearly_spends.extend([sum(block_nom[i*12:(i+1)*12]) for i in range(block["years"])])
-    withdrawals = [0]*years_build + yearly_spends
+    withdrawals = [0]*(years_build+1) + yearly_spends
     total_years = years_build + len(yearly_spends)
 
     # Simulaties
@@ -156,6 +156,7 @@ De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
 - **Rendement**: per jaar getrokken uit een normale verdeling met het gekozen gemiddelde en volatiliteit.  
 - **Weergave**: alle bedragen zijn in **nominale euro’s** (wat je daadwerkelijk op je rekening zou zien).
 """)
+
 
 
 
