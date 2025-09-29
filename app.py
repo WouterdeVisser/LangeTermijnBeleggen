@@ -7,7 +7,7 @@ st.set_page_config(layout="wide")
 
 # Simulatiefunctie
 def simulate(start_capital, monthly_start, monthly_end, years_build, spend_schedule,
-             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=5000):
+             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=2000):
 
     # Inleg (koopkracht → nominaal)
     months_total = years_build * 12
@@ -42,15 +42,15 @@ def simulate(start_capital, monthly_start, monthly_end, years_build, spend_sched
 
 
 # -------- Streamlit interface --------
-st.title("Interactieve Simulatie Lange Termijn Beleggen")
+st.title("Interactieve Vermogenssimulatie")
 
 # Leeftijd
-start_age = st.slider("Leeftijd bij start", 18, 50, 25)
+start_age = st.slider("Leeftijd bij start", 25, 60, 30)
 pension_age = 70
 pension_year = pension_age - start_age
 
 # Basisparameters
-start_capital = st.slider("Startkapitaal (€)", 0, 100000, 10000, 1000)
+start_capital = st.slider("Startkapitaal (€)", 0, 200000, 20000, 1000)
 monthly_start = st.slider("Begininleg per maand (€)", 0, 2000, 300, 50)
 monthly_end = st.slider("Eindinleg per maand (€)", 0, 3000, 800, 50)
 years_build = st.slider("Jaren opbouw", 1, 40, 30)
@@ -73,7 +73,7 @@ results, withdrawals = simulate(start_capital, monthly_start, monthly_end, years
                    spend_schedule, annual_return_mean, annual_return_std)
 
 # Percentielen
-percentiles = [10, 20, 50, 80, 90]
+percentiles = [10, 20, 40, 50, 60, 80, 90]
 curves = {p: np.percentile(results, p, axis=0) for p in percentiles}
 
 # Wanneer gaat vermogen naar 0?
@@ -81,7 +81,7 @@ zero_years = {}
 for p in percentiles:
     series = curves[p]
     idx = np.where(series <= 0)[0]
-    zero_years[p] = idx[0]+1 if len(idx) > 0 else None
+    zero_years[p] = idx[0] if len(idx) > 0 else None  # geen +1 meer!
 
 # Kleuren rood → groen
 colors = ['darkred', 'red', 'orange', 'gold', 'limegreen', 'green', 'darkgreen']
@@ -92,13 +92,13 @@ fig, ax = plt.subplots(figsize=(28,14), dpi=200)
 for p, c in zip(percentiles, colors):
     ax.plot(curves[p], label=f"{p}e perc.", color=c, linewidth=2)
 
-    # Label bij einde opbouw (jaar = years_build)
-    ax.text(years_build, curves[p][years_build], 
-            f"{int(curves[p][years_build]):,}", 
-            color="black", fontsize=14, fontweight="bold",
+    # Label bij einde opbouw (jaar = years_build, waarde index = years_build-1)
+    val_build = curves[p][years_build-1]
+    ax.text(years_build, min(val_build, 3_000_000),
+            f"{int(val_build):,}", color="black", fontsize=14, fontweight="bold",
             ha="left", va="bottom")
 
-    # Marker bij nulvermogen
+    # Marker bij nulvermogen (exact jaar, niet +1)
     if zero_years[p] is not None:
         ax.scatter(zero_years[p], 0, color=c, marker="x", s=120,
                    label=f"{p}e perc. op=0 in jaar {zero_years[p]}")
@@ -109,13 +109,13 @@ if 0 < pension_year <= results.shape[1]:
     ax.axvline(pension_year, color="red", linestyle="--", label=f"Pensioen {pension_age} jr")
     for p in percentiles:
         val = curves[p][pension_year]
-        ax.text(pension_year, val, f"{int(val):,}", 
-                color="black", fontsize=14, fontweight="bold",
+        ax.text(pension_year, min(val, 3_000_000),
+                f"{int(val):,}", color="black", fontsize=14, fontweight="bold",
                 ha="left", va="bottom")
 
 ax.set_xlabel("Jaar", fontsize=16)
 ax.set_ylabel("Vermogen (€)", fontsize=16)
-ax.set_ylim(-100000, 3_000_000)
+ax.set_ylim(0, 3_000_000)
 
 # Dynamische titel
 ax.set_title(
@@ -131,6 +131,7 @@ ax.grid(True)
 
 st.pyplot(fig, use_container_width=True)
 
+# Uitleg onder de grafiek
 st.markdown("""
 ### 📊 Uitleg bij de grafiek
 
@@ -138,33 +139,22 @@ De grafiek toont hoe jouw vermogen zich kan ontwikkelen onder verschillende scen
 De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
 
 #### Wat de lijnen en markeringen betekenen
-- **Kleurige lijnen**: percentielen van de uitkomsten
-  - **10e percentiel (rood)**: slechts 1 op 10 scenario’s doet het slechter → een pessimistisch pad.  
-  - **50e percentiel (middelste lijn)**: de mediane uitkomst → half van de scenario’s is beter, half slechter.  
-  - **90e percentiel (groen)**: slechts 1 op 10 scenario’s doet het beter → een optimistisch pad.  
-- **Zwarte stippellijn**: einde van de **opbouwfase** (jaren waarin je inlegt).  
-  Hier staan labels met het opgebouwde vermogen.  
-- **Rode stippellijn**: je **pensioenleeftijd** (70 minus je gekozen startleeftijd).  
-  Labels tonen het vermogen op dat moment.  
-- **Kruisjes**: het eerste jaar waarin het vermogen in dat scenario op nul komt.  
+- **Kleurige lijnen**: percentielen van de uitkomsten  
+  - **10e percentiel (rood)**: slechts 1 op 10 scenario’s doet het slechter → pessimistisch pad.  
+  - **50e percentiel (middelste lijn)**: de mediane uitkomst → helft van de scenario’s beter, helft slechter.  
+  - **90e percentiel (groen)**: slechts 1 op 10 scenario’s doet het beter → optimistisch pad.  
+- **Zwarte stippellijn**: einde van de **opbouwfase**. Labels tonen hier het opgebouwde vermogen.  
+- **Rode stippellijn**: je **pensioenleeftijd** (70 − startleeftijd). Labels tonen hier het vermogen op dat moment.  
+- **Kruisjes**: jaar waarin het vermogen in dat scenario op nul komt.  
 
 #### Over de fasen
-- **Opbouwfase**:  
-  - Je legt maandelijks in, beginnend bij het ingestelde minimum en lineair oplopend naar het maximum.  
-  - De bedragen die je invoert zijn in **koopkracht van nu**, en worden omgerekend naar **nominale euro’s** met inflatie (standaard 2%).  
-- **Opnamefase**:  
-  - Bestaat uit maximaal drie blokken (fasen).  
-  - Binnen elke fase loopt je opnamebedrag lineair van een beginbedrag naar een eindbedrag.  
-  - Ook hier voer je de bedragen in koopkracht van nu in; de simulator rekent ze om naar **nominale euro’s**.  
+- **Opbouwfase**: je legt maandelijks in, van begin- naar eindinleg (koopkracht van nu), omgerekend naar **nominale euro’s** met inflatie (2%).  
+- **Opnamefase**: bestaat uit maximaal drie blokken (fasen). Binnen elk blok loopt je opname lineair van een beginbedrag naar een eindbedrag (koopkracht van nu), ook omgerekend naar **nominale euro’s**.  
 
 #### Aannames
 - **Inflatie**: vast 2% per jaar.  
-- **Rendement**: per jaar getrokken uit een normale verdeling met gekozen gemiddelde en volatiliteit.  
-- **Vermogen**: altijd weergegeven in **nominale euro’s** (het bedrag dat je werkelijk op de bankrekening zou zien).  
-
-👉 Samengevat: de grafiek laat je zien hoe je vermogen zich in goede, gemiddelde en slechte scenario’s ontwikkelt,  
-met duidelijke markers voor einde inleg, pensioen en het moment dat je vermogen eventueel opraakt.
+- **Rendement**: per jaar getrokken uit een normale verdeling met het gekozen gemiddelde en volatiliteit.  
+- **Weergave**: alle bedragen zijn in **nominale euro’s** (wat je daadwerkelijk op je rekening zou zien).
 """)
-
 
 
