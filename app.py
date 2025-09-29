@@ -131,5 +131,40 @@ ax.grid(True)
 
 st.pyplot(fig, use_container_width=True)
 
+st.markdown("""
+### 📊 Uitleg bij de grafiek
+
+De grafiek toont hoe jouw vermogen zich kan ontwikkelen onder verschillende scenario’s.  
+De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
+
+#### Wat de lijnen en markeringen betekenen
+- **Kleurige lijnen**: percentielen van de uitkomsten
+  - **10e percentiel (rood)**: slechts 1 op 10 scenario’s doet het slechter → een pessimistisch pad.  
+  - **50e percentiel (middelste lijn)**: de mediane uitkomst → half van de scenario’s is beter, half slechter.  
+  - **90e percentiel (groen)**: slechts 1 op 10 scenario’s doet het beter → een optimistisch pad.  
+- **Zwarte stippellijn**: einde van de **opbouwfase** (jaren waarin je inlegt).  
+  Hier staan labels met het opgebouwde vermogen.  
+- **Rode stippellijn**: je **pensioenleeftijd** (70 minus je gekozen startleeftijd).  
+  Labels tonen het vermogen op dat moment.  
+- **Kruisjes**: het eerste jaar waarin het vermogen in dat scenario op nul komt.  
+
+#### Over de fasen
+- **Opbouwfase**:  
+  - Je legt maandelijks in, beginnend bij het ingestelde minimum en lineair oplopend naar het maximum.  
+  - De bedragen die je invoert zijn in **koopkracht van nu**, en worden omgerekend naar **nominale euro’s** met inflatie (standaard 2%).  
+- **Opnamefase**:  
+  - Bestaat uit maximaal drie blokken (fasen).  
+  - Binnen elke fase loopt je opnamebedrag lineair van een beginbedrag naar een eindbedrag.  
+  - Ook hier voer je de bedragen in koopkracht van nu in; de simulator rekent ze om naar **nominale euro’s**.  
+
+#### Aannames
+- **Inflatie**: vast 2% per jaar.  
+- **Rendement**: per jaar getrokken uit een normale verdeling met gekozen gemiddelde en volatiliteit.  
+- **Vermogen**: altijd weergegeven in **nominale euro’s** (het bedrag dat je werkelijk op de bankrekening zou zien).  
+
+👉 Samengevat: de grafiek laat je zien hoe je vermogen zich in goede, gemiddelde en slechte scenario’s ontwikkelt,  
+met duidelijke markers voor einde inleg, pensioen en het moment dat je vermogen eventueel opraakt.
+""")
+
 
 
