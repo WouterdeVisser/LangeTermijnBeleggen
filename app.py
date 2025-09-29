@@ -45,15 +45,15 @@ def simulate(start_capital, monthly_start, monthly_end, years_build, spend_sched
 st.title("Interactieve Vermogenssimulatie")
 
 # Leeftijd
-start_age = st.slider("Leeftijd bij start", 25, 60, 30)
+start_age = st.slider("Leeftijd bij start", 18, 50, 25)
 pension_age = 70
 pension_year = pension_age - start_age
 
 # Basisparameters
-start_capital = st.slider("Startkapitaal (€)", 0, 200000, 20000, 1000)
+start_capital = st.slider("Startkapitaal (€)", 0, 100000, 10000, 1000)
 monthly_start = st.slider("Begininleg per maand (€)", 0, 2000, 300, 50)
 monthly_end = st.slider("Eindinleg per maand (€)", 0, 3000, 800, 50)
-years_build = st.slider("Jaren opbouw", 1, 40, 30)
+years_build = st.slider("Jaren opbouw", 1, 50, 30)
 annual_return_mean = st.slider("Gemiddeld rendement (%)", 0, 15, 7, 1) / 100
 annual_return_std = st.slider("Volatiliteit rendement (%)", 0, 30, 15, 1) / 100
 
@@ -156,6 +156,7 @@ De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
 - **Rendement**: per jaar getrokken uit een normale verdeling met het gekozen gemiddelde en volatiliteit.  
 - **Weergave**: alle bedragen zijn in **nominale euro’s** (wat je daadwerkelijk op je rekening zou zien).
 """)
+
 
 
 
