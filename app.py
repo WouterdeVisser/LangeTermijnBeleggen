@@ -115,7 +115,7 @@ if 0 < pension_year <= results.shape[1]:
 
 ax.set_xlabel("Jaar", fontsize=16)
 ax.set_ylabel("Vermogen (€)", fontsize=16)
-ax.set_ylim(0, 3_000_000)
+ax.set_ylim(-100000, 3_000_000)
 
 # Dynamische titel
 ax.set_title(
@@ -156,5 +156,6 @@ De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
 - **Rendement**: per jaar getrokken uit een normale verdeling met het gekozen gemiddelde en volatiliteit.  
 - **Weergave**: alle bedragen zijn in **nominale euro’s** (wat je daadwerkelijk op je rekening zou zien).
 """)
+
 
 
