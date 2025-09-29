@@ -7,7 +7,7 @@ st.set_page_config(layout="wide")
 
 # Simulatiefunctie
 def simulate(start_capital, monthly_start, monthly_end, years_build, spend_schedule,
-             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=2000):
+             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=5000):
 
     # Inleg (koopkracht → nominaal)
     months_total = years_build * 12
@@ -115,7 +115,7 @@ if 0 < pension_year <= results.shape[1]:
 
 ax.set_xlabel("Jaar", fontsize=16)
 ax.set_ylabel("Vermogen (€)", fontsize=16)
-ax.set_ylim(0, 3_000_000)
+ax.set_ylim(-100000, 3_000_000)
 
 # Dynamische titel
 ax.set_title(
@@ -130,4 +130,5 @@ ax.legend(ncol=2, fontsize=14)
 ax.grid(True)
 
 st.pyplot(fig, use_container_width=True)
+
 
