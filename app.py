@@ -73,7 +73,7 @@ results, withdrawals = simulate(start_capital, monthly_start, monthly_end, years
                    spend_schedule, annual_return_mean, annual_return_std)
 
 # Percentielen
-percentiles = [10, 20, 40, 50, 60, 80, 90]
+percentiles = [10, 20, 50, 80, 90]
 curves = {p: np.percentile(results, p, axis=0) for p in percentiles}
 
 # Wanneer gaat vermogen naar 0?
@@ -130,5 +130,6 @@ ax.legend(ncol=2, fontsize=14)
 ax.grid(True)
 
 st.pyplot(fig, use_container_width=True)
+
 
 
