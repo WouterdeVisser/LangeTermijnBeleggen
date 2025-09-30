@@ -101,7 +101,7 @@ for p, c, name in zip(percentiles, colors, names):
         name=name,
         line=dict(color=c, width=3)
     ))
-    '''# Kruisje bij nulvermogen
+    # Kruisje bij nulvermogen
     if zero_years[p] is not None:
         fig.add_trace(go.Scatter(
             x=[zero_years[p]],
@@ -111,10 +111,10 @@ for p, c, name in zip(percentiles, colors, names):
             text=[f"0 in jaar {zero_years[p]}"],
             textposition="top center",
             showlegend=False
-        ))'''
+        ))
 
 # Verticale lijnen
-fig.add_vline(x=(years_build-1), line_dash="dot", line_color="black",
+fig.add_vline(x=(years_build-1), line_dash="dot", line_color="red",
               annotation_text="Einde opbouw", annotation_position="top left")
 if 0 < pension_year <= results.shape[1]:
     fig.add_vline(x=pension_year, line_dash="dash", line_color="red",
@@ -148,6 +148,7 @@ st.markdown("""
 - Rendement wordt gesimuleerd met een Monte Carlo-methode: gemiddelde en volatiliteit instelbaar.  
 - Alle bedragen in de grafiek zijn **nominaal** (wat je werkelijk op je rekening zou zien).
 """)
+
 
 
 
