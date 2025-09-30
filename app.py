@@ -46,7 +46,7 @@ st.title("💰 Interactieve Vermogenssimulatie")
 
 # Leeftijd
 start_age = st.slider("Leeftijd bij start", 18, 60, 25)
-pension_age = 70
+pension_age = 69
 pension_year = pension_age - start_age
 
 # Basisparameters
@@ -101,20 +101,9 @@ for p, c, name in zip(percentiles, colors, names):
         name=name,
         line=dict(color=c, width=3)
     ))
-    # Kruisje bij nulvermogen
-    if zero_years[p] is not None:
-        fig.add_trace(go.Scatter(
-            x=[zero_years[p]],
-            y=[0],
-            mode="markers+text",
-            marker=dict(color=c, size=12, symbol="x"),
-            text=[f"0 in jaar {zero_years[p]}"],
-            textposition="top center",
-            showlegend=False
-        ))
 
 # Verticale lijnen
-fig.add_vline(x=(years_build-1), line_dash="dot", line_color="red",
+fig.add_vline(x=(years_build-1), line_dash="dot", line_color="magenta",
               annotation_text="Einde opbouw", annotation_position="top left")
 if 0 < pension_year <= results.shape[1]:
     fig.add_vline(x=pension_year, line_dash="dash", line_color="red",
@@ -140,14 +129,17 @@ st.markdown("""
 ### ℹ️ Uitleg bij de grafiek
 - **Kleurige lijnen**: verschillende scenario’s (percentielen, van pessimistisch naar optimistisch).  
 - **Paarse stippellijn**: einde van de opbouwfase (inleg stopt).  
-- **Rode stippellijn**: je pensioenleeftijd (70 − startleeftijd).  
-- **Kruisjes**: jaar waarin het vermogen in dat scenario op nul komt.  
+- **Rode stippellijn**: je pensioenleeftijd (69 − startleeftijd).  
+- **Kruisjes**: jaar waarin het vermogen in dat scenario op nul komt.  \
+- De percentages die bij de lijnen worden weergegeven zijn de kansen dat het in de realiteit eronder ligt. 
 
 #### Aannames
 - Inleg en opname zijn opgegeven in **koopkracht van nu** en omgerekend naar **nominale euro’s** met inflatie (2% p/j).  
 - Rendement wordt gesimuleerd met een Monte Carlo-methode: gemiddelde en volatiliteit instelbaar.  
 - Alle bedragen in de grafiek zijn **nominaal** (wat je werkelijk op je rekening zou zien).
+
 """)
+
 
 
 
