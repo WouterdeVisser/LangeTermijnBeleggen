@@ -33,7 +33,7 @@ def simulate(start_capital, monthly_start, monthly_end, years_build, spend_sched
             r = rng.normal(annual_return_mean, annual_return_std)
             contrib = yearly_contribs[year] if year < years_build else 0
             withdraw = withdrawals[year] if year < len(withdrawals) else 0
-            capital = capital * (1+r) + contrib - withdraw
+            capital = capital * (1+r - 0.015) + contrib - withdraw
             if capital < 0:
                 capital = 0
             results[s, year] = capital
@@ -139,6 +139,7 @@ st.markdown("""
 - Alle bedragen in de grafiek zijn **nominaal** (wat je werkelijk op je rekening zou zien).
 
 """)
+
 
 
 
