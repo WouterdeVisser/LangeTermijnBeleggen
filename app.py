@@ -45,14 +45,14 @@ def simulate(start_capital, monthly_start, monthly_end, years_build, spend_sched
 st.title("💰 Interactieve Vermogenssimulatie")
 
 # Leeftijd
-start_age = st.slider("Leeftijd bij start", 25, 60, 30)
+start_age = st.slider("Leeftijd bij start", 18, 60, 25)
 pension_age = 70
 pension_year = pension_age - start_age
 
 # Basisparameters
-start_capital = st.slider("Startkapitaal (€)", 0, 200000, 20000, 1000)
-monthly_start = st.slider("Begininleg per maand (€)", 0, 2000, 300, 50)
-monthly_end = st.slider("Eindinleg per maand (€)", 0, 3000, 800, 50)
+start_capital = st.slider("Startkapitaal (€)", 0, 100000, 10000, 1000)
+monthly_start = st.slider("Begininleg per maand (€)", 0, 2000, 300, 10)
+monthly_end = st.slider("Eindinleg per maand (€)", 0, 2000, 800, 10)
 years_build = st.slider("Jaren opbouw", 1, 40, 30)
 annual_return_mean = st.slider("Gemiddeld rendement (%)", 0, 15, 7, 1) / 100
 annual_return_std = st.slider("Volatiliteit rendement (%)", 0, 30, 15, 1) / 100
@@ -101,7 +101,7 @@ for p, c, name in zip(percentiles, colors, names):
         name=name,
         line=dict(color=c, width=3)
     ))
-    # Kruisje bij nulvermogen
+    '''# Kruisje bij nulvermogen
     if zero_years[p] is not None:
         fig.add_trace(go.Scatter(
             x=[zero_years[p]],
@@ -111,10 +111,10 @@ for p, c, name in zip(percentiles, colors, names):
             text=[f"0 in jaar {zero_years[p]}"],
             textposition="top center",
             showlegend=False
-        ))
+        ))'''
 
 # Verticale lijnen
-fig.add_vline(x=years_build, line_dash="dot", line_color="black",
+fig.add_vline(x=(years_build-1), line_dash="dot", line_color="black",
               annotation_text="Einde opbouw", annotation_position="top left")
 if 0 < pension_year <= results.shape[1]:
     fig.add_vline(x=pension_year, line_dash="dash", line_color="red",
@@ -139,7 +139,7 @@ st.plotly_chart(fig, use_container_width=True)
 st.markdown("""
 ### ℹ️ Uitleg bij de grafiek
 - **Kleurige lijnen**: verschillende scenario’s (percentielen, van pessimistisch naar optimistisch).  
-- **Zwarte stippellijn**: einde van de opbouwfase (inleg stopt).  
+- **Paarse stippellijn**: einde van de opbouwfase (inleg stopt).  
 - **Rode stippellijn**: je pensioenleeftijd (70 − startleeftijd).  
 - **Kruisjes**: jaar waarin het vermogen in dat scenario op nul komt.  
 
@@ -148,6 +148,7 @@ st.markdown("""
 - Rendement wordt gesimuleerd met een Monte Carlo-methode: gemiddelde en volatiliteit instelbaar.  
 - Alle bedragen in de grafiek zijn **nominaal** (wat je werkelijk op je rekening zou zien).
 """)
+
 
 
 
