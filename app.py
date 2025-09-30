@@ -1,13 +1,13 @@
 import streamlit as st
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # Streamlit layout
 st.set_page_config(layout="wide")
 
 # Simulatiefunctie
 def simulate(start_capital, monthly_start, monthly_end, years_build, spend_schedule,
-             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=10000):
+             annual_return_mean, annual_return_std, inflation=0.02, n_scenarios=2000):
 
     # Inleg (koopkracht → nominaal)
     months_total = years_build * 12
@@ -21,7 +21,7 @@ def simulate(start_capital, monthly_start, monthly_end, years_build, spend_sched
         block_vals = np.linspace(block["start"], block["end"], block["years"]*12)
         block_nom = [block_vals[m] * ((1+inflation)**(years_build + m//12)) for m in range(len(block_vals))]
         yearly_spends.extend([sum(block_nom[i*12:(i+1)*12]) for i in range(block["years"])])
-    withdrawals = [0]*(years_build+1) + yearly_spends
+    withdrawals = [0]*years_build + yearly_spends
     total_years = years_build + len(yearly_spends)
 
     # Simulaties
@@ -42,23 +42,23 @@ def simulate(start_capital, monthly_start, monthly_end, years_build, spend_sched
 
 
 # -------- Streamlit interface --------
-st.title("Interactieve Vermogenssimulatie")
+st.title("💰 Interactieve Vermogenssimulatie")
 
 # Leeftijd
-start_age = st.slider("Leeftijd bij start", 18, 50, 25)
+start_age = st.slider("Leeftijd bij start", 25, 60, 30)
 pension_age = 70
 pension_year = pension_age - start_age
 
 # Basisparameters
-start_capital = st.slider("Startkapitaal (€)", 0, 100000, 10000, 1000)
+start_capital = st.slider("Startkapitaal (€)", 0, 200000, 20000, 1000)
 monthly_start = st.slider("Begininleg per maand (€)", 0, 2000, 300, 50)
 monthly_end = st.slider("Eindinleg per maand (€)", 0, 3000, 800, 50)
-years_build = st.slider("Jaren opbouw", 1, 50, 30)
+years_build = st.slider("Jaren opbouw", 1, 40, 30)
 annual_return_mean = st.slider("Gemiddeld rendement (%)", 0, 15, 7, 1) / 100
 annual_return_std = st.slider("Volatiliteit rendement (%)", 0, 30, 15, 1) / 100
 
 # Opname fasen
-st.subheader("Opnamefase (3 blokken)")
+st.subheader("Opnamefase (max 3 blokken)")
 spend_schedule = []
 for i in range(3):
     col1, col2, col3 = st.columns(3)
@@ -81,81 +81,74 @@ zero_years = {}
 for p in percentiles:
     series = curves[p]
     idx = np.where(series <= 0)[0]
-    zero_years[p] = idx[0] if len(idx) > 0 else None  # geen +1 meer!
+    zero_years[p] = int(idx[0]) if len(idx) > 0 else None
 
 # Kleuren rood → groen
 colors = ['darkred', 'red', 'orange', 'gold', 'limegreen', 'green', 'darkgreen']
+names = [
+    "Pessimistisch (10%)", "Laag (20%)", "Onder gemiddeld (40%)",
+    "Mediaan (50%)", "Boven gemiddeld (60%)", "Hoog (80%)", "Optimistisch (90%)"
+]
 
-# Plot
-fig, ax = plt.subplots(figsize=(28,14), dpi=200)
+# Plotly grafiek
+fig = go.Figure()
 
-for p, c in zip(percentiles, colors):
-    ax.plot(curves[p], label=f"{p}e perc.", color=c, linewidth=2)
-
-    # Label bij einde opbouw (jaar = years_build, waarde index = years_build)
-    val_build = curves[p][years_build]
-    ax.text(years_build, min(val_build, 3_000_000),
-            f"{int(val_build):,}", color="black", fontsize=14, fontweight="bold",
-            ha="left", va="bottom")
-
-    # Marker bij nulvermogen (exact jaar, niet +1)
+for p, c, name in zip(percentiles, colors, names):
+    fig.add_trace(go.Scatter(
+        x=list(range(len(curves[p]))),
+        y=curves[p],
+        mode="lines",
+        name=name,
+        line=dict(color=c, width=3)
+    ))
+    # Kruisje bij nulvermogen
     if zero_years[p] is not None:
-        ax.scatter(zero_years[p], 0, color=c, marker="x", s=120,
-                   label=f"{p}e perc. op=0 in jaar {zero_years[p]}")
+        fig.add_trace(go.Scatter(
+            x=[zero_years[p]],
+            y=[0],
+            mode="markers+text",
+            marker=dict(color=c, size=12, symbol="x"),
+            text=[f"0 in jaar {zero_years[p]}"],
+            textposition="top center",
+            showlegend=False
+        ))
 
 # Verticale lijnen
-ax.axvline(years_build, color="black", linestyle=":", label="Einde opbouwfase")
+fig.add_vline(x=years_build, line_dash="dot", line_color="black",
+              annotation_text="Einde opbouw", annotation_position="top left")
 if 0 < pension_year <= results.shape[1]:
-    ax.axvline(pension_year, color="red", linestyle="--", label=f"Pensioen {pension_age} jr")
-    for p in percentiles:
-        val = curves[p][pension_year]
-        ax.text(pension_year, min(val, 3_000_000),
-                f"{int(val):,}", color="black", fontsize=14, fontweight="bold",
-                ha="left", va="bottom")
+    fig.add_vline(x=pension_year, line_dash="dash", line_color="red",
+                  annotation_text=f"Pensioen ({pension_age})", annotation_position="top left")
 
-ax.set_xlabel("Jaar", fontsize=16)
-ax.set_ylabel("Vermogen (€)", fontsize=16)
-ax.set_ylim(-100000, 3_000_000)
+fig.update_layout(
+    title=f"📊 Monte Carlo Vermogenssimulatie ({results.shape[0]} scenario’s)<br>"
+          f"Startleeftijd: {start_age}, Pensioen: {pension_age}, "
+          f"Startkapitaal: €{start_capital:,}, Inleg: €{monthly_start}→{monthly_end}/mnd, "
+          f"Rendement: {annual_return_mean*100:.1f}% ± {annual_return_std*100:.1f}%",
+    xaxis_title="Jaar",
+    yaxis_title="Vermogen (€)",
+    template="plotly_white",
+    legend=dict(font=dict(size=14)),
+    font=dict(size=16),
+    height=800
+)
 
-# Dynamische titel
-ax.set_title(
-    f"Monte Carlo Vermogenssimulatie ({len(results)} scenario's)\n"
-    f"Leeftijd start: {start_age}, Pensioen: {pension_age}, "
-    f"Startkapitaal: €{start_capital:,}, "
-    f"Inleg: {monthly_start}→{monthly_end} €/mnd reëel ({years_build} jr), "
-    f"Rendement: {annual_return_mean*100:.1f}% ± {annual_return_std*100:.1f}%"
-, fontsize=18)
-
-ax.legend(ncol=2, fontsize=14)
-ax.grid(True)
-
-st.pyplot(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
 # Uitleg onder de grafiek
 st.markdown("""
-### 📊 Uitleg bij de grafiek
-
-De grafiek toont hoe jouw vermogen zich kan ontwikkelen onder verschillende scenario’s.  
-De berekening is gebaseerd op **duizenden Monte Carlo-simulaties**.
-
-#### Wat de lijnen en markeringen betekenen
-- **Kleurige lijnen**: percentielen van de uitkomsten  
-  - **10e percentiel (rood)**: slechts 1 op 10 scenario’s doet het slechter → pessimistisch pad.  
-  - **50e percentiel (middelste lijn)**: de mediane uitkomst → helft van de scenario’s beter, helft slechter.  
-  - **90e percentiel (groen)**: slechts 1 op 10 scenario’s doet het beter → optimistisch pad.  
-- **Zwarte stippellijn**: einde van de **opbouwfase**. Labels tonen hier het opgebouwde vermogen.  
-- **Rode stippellijn**: je **pensioenleeftijd** (70 − startleeftijd). Labels tonen hier het vermogen op dat moment.  
+### ℹ️ Uitleg bij de grafiek
+- **Kleurige lijnen**: verschillende scenario’s (percentielen, van pessimistisch naar optimistisch).  
+- **Zwarte stippellijn**: einde van de opbouwfase (inleg stopt).  
+- **Rode stippellijn**: je pensioenleeftijd (70 − startleeftijd).  
 - **Kruisjes**: jaar waarin het vermogen in dat scenario op nul komt.  
 
-#### Over de fasen
-- **Opbouwfase**: je legt maandelijks in, van begin- naar eindinleg (koopkracht van nu), omgerekend naar **nominale euro’s** met inflatie (2%).  
-- **Opnamefase**: bestaat uit maximaal drie blokken (fasen). Binnen elk blok loopt je opname lineair van een beginbedrag naar een eindbedrag (koopkracht van nu), ook omgerekend naar **nominale euro’s**.  
-
 #### Aannames
-- **Inflatie**: vast 2% per jaar.  
-- **Rendement**: per jaar getrokken uit een normale verdeling met het gekozen gemiddelde en volatiliteit.  
-- **Weergave**: alle bedragen zijn in **nominale euro’s** (wat je daadwerkelijk op je rekening zou zien).
+- Inleg en opname zijn opgegeven in **koopkracht van nu** en omgerekend naar **nominale euro’s** met inflatie (2% p/j).  
+- Rendement wordt gesimuleerd met een Monte Carlo-methode: gemiddelde en volatiliteit instelbaar.  
+- Alle bedragen in de grafiek zijn **nominaal** (wat je werkelijk op je rekening zou zien).
 """)
+
 
 
 
